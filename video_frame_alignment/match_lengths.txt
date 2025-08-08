@@ -1,0 +1,38 @@
+Prompt:
+
+You're dealing with a temporal desynchronization between two camera streams of the same scene. The second video is playing faster than it should — 15 seconds shorter over the same period implies about 6% speed-up. 
+
+Re-encode Video 2 with Time Correction:
+
+Using ffmpeg to slow down video 2 by 6% (or match the exact length of video 1):
+
+ffmpeg -i video_cam2.mp4 -filter:v "setpts=1.06*PTS" output_cam2_slowed.mp4
+
+Or use the exact duration ratio:
+
+# For example if video1 = 211s and video2 = 195s
+ffmpeg -i vdo1.avi -filter:v "setpts=211/195*PTS" -c:v libx264 -crf 18 -preset slow vdo1_fixed.avi
+
+| Option                        | Description                                                                    |
+| ----------------------------- | ------------------------------------------------------------------------------ |
+| `-filter:v "setpts=1.06*PTS"` | Slows down the video by 6%.                                                    |
+| `-c:v libx264`                | Use the H.264 codec (high quality + compatibility).                            |
+| `-crf 18`                     | **Constant Rate Factor** — lower means better quality. Recommended: `18–23`.   |
+| `-preset slow`                | Slower = better compression (not playback speed). `medium` or `slow` are good. |
+
+# !!!! BET šis nemaina situāciju iekš python jo tas nemaina frames skaitu, tas maina PTS - presentation timestamps.
+
+Šitā var pārbaudīt timestamp:
+
+original_fps = detector2.cap.get(cv2.CAP_PROP_FPS)
+print(f"Original FPS: {original_fps}")
+
+Original FPS: 10.0
+
+
+
+ffmpeg -i vdo1_un-lengthened.avi -filter_complex "[0:v]setpts=1.082*PTS,fps=10" -c:v libx264 -crf 18 -preset slow vdo1_fixed.avi
+
+vdo1.av
+
+
