@@ -1,0 +1,91 @@
+{
+  "tiles": [
+    {
+      "index": 0,
+      "region_xyxy": [
+        0,
+        0,
+        640,
+        540
+      ],
+      "tile_image": "/mnt/data/fisheye_partition_demo/tile_00.png",
+      "mapped_bboxes_xyxy": [
+        [
+          397.3887939453125,
+          372.60833740234375,
+          543.3326416015625,
+          513.2802734375
+        ]
+      ]
+    },
+    {
+      "index": 1,
+      "region_xyxy": [
+        640,
+        0,
+        1280,
+        540
+      ],
+      "tile_image": "/mnt/data/fisheye_partition_demo/tile_01.png",
+      "mapped_bboxes_xyxy": [
+        [
+          260.65936279296875,
+          264.8374328613281,
+          457.630126953125,
+          432.7084045410156
+        ]
+      ]
+    },
+    {
+      "index": 2,
+      "region_xyxy": [
+        1280,
+        0,
+        1920,
+        540
+      ],
+      "tile_image": "/mnt/data/fisheye_partition_demo/tile_02.png",
+      "mapped_bboxes_xyxy": []
+    },
+    {
+      "index": 3,
+      "region_xyxy": [
+        0,
+        540,
+        640,
+        1080
+      ],
+      "tile_image": "/mnt/data/fisheye_partition_demo/tile_03.png",
+      "mapped_bboxes_xyxy": []
+    },
+    {
+      "index": 4,
+      "region_xyxy": [
+        640,
+        540,
+        1280,
+        1080
+      ],
+      "tile_image": "/mnt/data/fisheye_partition_demo/tile_04.png",
+      "mapped_bboxes_xyxy": []
+    },
+    {
+      "index": 5,
+      "region_xyxy": [
+        1280,
+        540,
+        1920,
+        1080
+      ],
+      "tile_image": "/mnt/data/fisheye_partition_demo/tile_05.png",
+      "mapped_bboxes_xyxy": [
+        [
+          62.412841796875,
+          180.589599609375,
+          283.9769287109375,
+          432.41278076171875
+        ]
+      ]
+    }
+  ]
+}

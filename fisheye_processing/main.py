@@ -7,13 +7,13 @@ Usage:
     python main.py --mode <undistort|pano>
 
 Input data:
-    - Fisheye images located in the specified folder.
+    - A fisheye image.
 Output:
-    - Undistorted images displayed in a window.
-    - Panoramic images displayed in a window if 'pano' mode is selected.
+    - Undistorted image displayed in a window.
+    - Panoramic image displayed in a window if 'pano' mode is selected.
 
-Default input folder:
-    - /home/tomass/tomass/data/VIP_CUP_2020_fisheye_dataset/fisheye_video_1
+Default input folder:   /home/tomass/Pictures/IPcam1_screens/vlcsnap-2025-08-27-15h29m55s778.png
+    - 
 
 """
 # main.py
@@ -22,10 +22,11 @@ import numpy as np
 import cv2
 from pathlib import Path
 import argparse
+import math
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', type=str, choices=['undistort', 'pano'], default='undistort')
+    parser.add_argument('--mode', type=str, choices=['undistort', 'pano', 'multiview'], default='undistort')
     return parser.parse_args()
 
 
@@ -40,7 +41,7 @@ def get_camera_intrinsics(image_width, image_height):
     Returns:
     - K: Camera intrinsics matrix as a numpy array.
     """
-    fx = fy = image_width / 2  # Assuming square pixels and centered principal point
+    fx = fy = image_width /2 # Assuming square pixels and centered principal point
     cx = cy = image_width / 2   # Center of the image
     
     K = np.array([
@@ -51,8 +52,13 @@ def get_camera_intrinsics(image_width, image_height):
     
     return K
 
-def get_distortion_coefficients():
-    D = np.array([[-0.05], [0.01], [0.0], [0.0]])  # example fisheye distortion coeffs
+def get_distortion_coefficients(args):
+    if args.mode == 'undistort':
+        D = np.array([[-0.05], [0.01], [0.0], [0.0]])  # example fisheye distortion coeffs
+    elif args.mode == 'multiview':
+        #Šitais dod kkadu normalu attelu kad ir kamera itka pagriezta uz divam tam pretejam puseem
+        D = np.array([[-0.25], [0.07], [0.0], [0.0]])  # example fisheye distortion coeffs
+    #D = np.array([[-0.33], [0.075], [0.0], [0.0]])  # example fisheye distortion coeffs
     return D
 
 def undistort_image(image, K, D):
@@ -78,6 +84,52 @@ def undistort_image(image, K, D):
 
     return undistorted_image
 
+def get_rotation_matrix(yaw_deg=0, pitch_deg=0, roll_deg=0):
+    """
+    Returns a rotation matrix for given yaw/pitch/roll (in degrees).
+    Rotation order: roll -> pitch -> yaw.
+    """
+    yaw = np.deg2rad(yaw_deg)
+    pitch = np.deg2rad(pitch_deg)
+    roll = np.deg2rad(roll_deg)
+
+    # Rotation matrices
+    R_yaw = np.array([
+        [math.cos(yaw), -math.sin(yaw), 0],
+        [math.sin(yaw),  math.cos(yaw), 0],
+        [0, 0, 1]
+    ])
+
+    R_pitch = np.array([
+        [math.cos(pitch), 0, math.sin(pitch)],
+        [0, 1, 0],
+        [-math.sin(pitch), 0, math.cos(pitch)]
+    ])
+
+    R_roll = np.array([
+        [1, 0, 0],
+        [0, math.cos(roll), -math.sin(roll)],
+        [0, math.sin(roll),  math.cos(roll)]
+    ])
+
+    # Combined
+    R = R_yaw @ R_pitch @ R_roll
+    return R.astype(np.float32)
+
+def undistort_with_rotation(image, K, D, yaw=0, pitch=0, roll=0):
+    """
+    Undistorts fisheye image with a rotated rectification (simulated pinhole view).
+    """
+    h, w = image.shape[:2]
+    R = get_rotation_matrix(yaw, pitch, roll)
+
+    map1, map2 = cv2.fisheye.initUndistortRectifyMap(
+        K, D, R, K, (w, h), cv2.CV_16SC2
+    )
+
+    rectified = cv2.remap(image, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+    return rectified
+
 def fisheye_to_panorama(img, fov_deg=360, output_width=2048, output_height=512):
     h, w = img.shape[:2]
     cx, cy = w / 2, h / 2
@@ -101,35 +153,53 @@ def fisheye_to_panorama(img, fov_deg=360, output_width=2048, output_height=512):
     return pano
 
 def main(args):
-    # Open folder and read images
 
-    image_folder = Path("/home/tomass/tomass/data/VIP_CUP_2020_fisheye_dataset/fisheye_video_1")
+    
+    # load a sample fisheye image
+    image_path = Path("/home/tomass/Pictures/IPcam1_screens/vlcsnap-2025-08-27-15h29m55s778.png")    
 
-    img_paths = sorted(image_folder.glob("*.[jp][pn]g"))  # matches .jpg, .jpeg, .png
+    image = cv2.imread(str(image_path))
+    if image is None:
+        print(f"Failed to load: {image_path}")
 
-    # Loop through all image files (common formats)
-    for image_path in img_paths:
-        image = cv2.imread(str(image_path))
-        if image is None:
-            print(f"Failed to load: {image_path}")
-            continue
+    if args.mode == 'undistort':
+            
+        image_height, image_width = image.shape[:2]
+        # Get camera intrinsics and distortion coefficients
+        K = get_camera_intrinsics(image_width, image_height)
+        D = get_distortion_coefficients(args)
+        # Undistort the image
+        undistorted_image = undistort_image(image, K, D)
 
-        if args.mode == 'undistort':
-                
-            image_height, image_width = image.shape[:2]
-            # Get camera intrinsics and distortion coefficients
-            K = get_camera_intrinsics(image_width, image_height)
-            D = get_distortion_coefficients()
-            # Undistort the image
-            undistorted_image = undistort_image(image, K, D)
+        #resize for display
+        undistorted_image = cv2.resize(undistorted_image, (960, 960))
 
-        elif args.mode == 'pano':
-            # Convert fisheye image to panorama
-            undistorted_image = fisheye_to_panorama(image)
-        
-        # Show the undistorted image
         cv2.imshow("Undistorted Image", undistorted_image)
-        cv2.waitKey(0)  # Wait for a key press to close the window
+
+    elif args.mode == 'pano':
+        # Convert fisheye image to panorama
+        undistorted_image = fisheye_to_panorama(image)
+
+        cv2.imshow("Pano Image", undistorted_image)
+
+    if args.mode == 'multiview':
+        image_height, image_width = image.shape[:2]
+        K = get_camera_intrinsics(image_width, image_height)
+        D = get_distortion_coefficients(args)
+
+        #Piemeeram nemam 3 skatus - forward, left, right
+
+        views = {
+            "forward": undistort_with_rotation(image, K, D, yaw=0, pitch=0),
+            "-45": undistort_with_rotation(image, K, D, yaw=270, pitch=-45),
+            "45": undistort_with_rotation(image, K, D, yaw=90, pitch=45)
+        }
+
+        for name, view in views.items():
+            cv2.imshow(name, cv2.resize(view, (640, 640)))
+
+    
+    cv2.waitKey(0)  # Wait for a key press to close the window
 
     cv2.destroyAllWindows()
 
