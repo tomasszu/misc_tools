@@ -3,6 +3,7 @@ from typing import List, Tuple, Dict, Optional
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageOps
+import cv2
 
 # Try to import OpenCV for fast remapping. If unavailable, we'll fallback.
 try:
@@ -15,7 +16,7 @@ except Exception:
 @dataclass
 class DistortionParams:
     # Radial polynomial distortion (OpenCV-style, barrel if k1 < 0)
-    k1: float = -0.9
+    k1: float = -0.6
     k2: float = -0.1
     k3: float = -0.05
     p1: float = 0.0  # tangential
@@ -28,7 +29,7 @@ class DistortionParams:
 
 def _get_intrinsics(w: int, h: int, params: DistortionParams):
     fx = params.fx if params.fx is not None else 0.5 * w
-    fy = params.fy if params.fy is not None else 0.5 * w  # square pixels assumption
+    fy = params.fy if params.fy is not None else 0.5 * h
     cx = params.cx if params.cx is not None else 0.5 * w
     cy = params.cy if params.cy is not None else 0.5 * h
     return fx, fy, cx, cy
@@ -106,68 +107,43 @@ def distort_image(img: Image.Image, params: DistortionParams) -> Image.Image:
                arr[y1, x1] * wd[..., None]).astype(np.uint8)
         return Image.fromarray(out)
 
-def _apply_to_points(points_xy: np.ndarray, img_size: Tuple[int,int], params: DistortionParams) -> np.ndarray:
-    """Apply forward distortion to 2D points (N,2) given image size, returns distorted points in pixel coords."""
-    w, h = img_size
-    fx, fy, cx, cy = _get_intrinsics(w, h, params)
-    x = (points_xy[:,0] - cx) / fx
-    y = (points_xy[:,1] - cy) / fy
-    xd, yd = _radial_tangential_distort(x, y, params)
-    u = xd * fx + cx
-    v = yd * fy + cy
-    return np.stack([u, v], axis=1)
-
 
 def map_bboxes_through_distortion(
     bboxes_xyxy: np.ndarray,
     img_size: Tuple[int,int],
-    params: DistortionParams,
-    n_edge_samples: int = 10
+    params: DistortionParams
 ) -> np.ndarray:
-    """Map bounding boxes consistently with distort_image(), using inverse mapping."""
-
+    """
+    Distort bounding boxes by rasterizing them into a binary mask,
+    applying the same distortion to the mask as the image,
+    and extracting the bounding rectangle afterwards.
+    This guarantees consistency with the image warp.
+    """
     w, h = img_size
-    fx, fy, cx, cy = _get_intrinsics(w, h, params)
     out = np.zeros_like(bboxes_xyxy, dtype=np.float32)
 
     for i, (x1, y1, x2, y2) in enumerate(bboxes_xyxy):
-        # sample along edges
-        xs = np.linspace(x1, x2, n_edge_samples)
-        ys = np.linspace(y1, y2, n_edge_samples)
-        edge_points = []
-        edge_points.extend([[x, y1] for x in xs])
-        edge_points.extend([[x, y2] for x in xs])
-        edge_points.extend([[x1, y] for y in ys])
-        edge_points.extend([[x2, y] for y in ys])
-        edge_points = np.array(edge_points, dtype=np.float32)
+        # --- create binary mask for this bbox
+        mask = np.zeros((h, w), dtype=np.uint8)
+        cv2.rectangle(mask, (int(x1), int(y1)), (int(x2), int(y2)), 255, -1)
 
-        # normalize
-        x = (edge_points[:,0] - cx) / fx
-        y = (edge_points[:,1] - cy) / fy
+        # --- distort the mask with the same function used on the image
+        mask_pil = Image.fromarray(mask)
+        mask_distorted = distort_image(mask_pil, params)
+        mask_distorted = np.array(mask_distorted)
 
-        # iterative inverse (same as distort_image)
-        x_u = x.copy()
-        y_u = y.copy()
-        for _ in range(3):
-            x_d, y_d = _radial_tangential_distort(x_u, y_u, params)
-            ex = x_d - x
-            ey = y_d - y
-            x_u -= 0.5 * ex
-            y_u -= 0.5 * ey
+        # --- find nonzero pixels (distorted bbox region)
+        ys, xs = np.nonzero(mask_distorted > 0)
+        if len(xs) > 0 and len(ys) > 0:
+            x_min, x_max = xs.min(), xs.max()
+            y_min, y_max = ys.min(), ys.max()
+        else:
+            # if mask vanished (e.g., distorted out of FOV), keep original
+            x_min, y_min, x_max, y_max = x1, y1, x2, y2
 
-        # back to pixels
-        u = x_u * fx + cx
-        v = y_u * fy + cy
-
-        xmins = np.clip(u.min(), 0, w-1)
-        xmaxs = np.clip(u.max(), 0, w-1)
-        ymins = np.clip(v.min(), 0, h-1)
-        ymaxs = np.clip(v.max(), 0, h-1)
-        out[i] = [xmins, ymins, xmaxs, ymaxs]
+        out[i] = [x_min, y_min, x_max, y_max]
 
     return out
-
-
 
 def draw_bboxes(img: Image.Image, bboxes: np.ndarray, color=(255,0,0)) -> Image.Image:
     im = img.copy()
@@ -175,40 +151,82 @@ def draw_bboxes(img: Image.Image, bboxes: np.ndarray, color=(255,0,0)) -> Image.
     for x1,y1,x2,y2 in bboxes:
         dr.rectangle((x1,y1,x2,y2), outline=color, width=3)
     return im
+
+def ground_truth_for_frame(frame_idx, last_read_line, frame_nr, curr_line, frame, lines, params):
+
+    labeled_frame = frame.copy()
+    labeled_frame = Image.fromarray(cv2.cvtColor(labeled_frame, cv2.COLOR_BGR2RGB))
+    distorted_img = distort_image(labeled_frame, params)
+    if(last_read_line != 0 and frame_idx == frame_nr):
+        x, y, w, h = map(float, curr_line[2:6])
+        x1, y1, x2, y2 = int(x), int(y), int(x+w), int(y+h)
+        bboxes = np.array([[x1,y1,x2,y2]], dtype=np.float32)
+        distorted_img = draw_bboxes(distorted_img, bboxes, color=(0,255,0))
+
+        distorted_bboxes = map_bboxes_through_distortion(bboxes, distorted_img.size, params)
+        distorted_img = draw_bboxes(distorted_img, distorted_bboxes, color=(255,0,0))
+
+    if(last_read_line == 0 or frame_idx == frame_nr):
+        while frame_idx == frame_nr:
+            line = lines[last_read_line]
+            curr_line = line.split(",", maxsplit=6)
+            frame_idx = int(curr_line[0])
+            x, y, w, h = map(float, curr_line[2:6])
+            x1, y1, x2, y2 = int(x), int(y), int(x+w), int(y+h)
+            bboxes = np.array([[x1,y1,x2,y2]], dtype=np.float32)
+            if frame_idx == frame_nr:
+                last_read_line = last_read_line+1
+                distorted_img = draw_bboxes(distorted_img, bboxes, color=(0,255,0))
+
+                distorted_bboxes = map_bboxes_through_distortion(bboxes, distorted_img.size, params)
+                distorted_img = draw_bboxes(distorted_img, distorted_bboxes, color=(255,0,0))
+            else:
+                last_read_line = last_read_line+1
+                break
     
 
-# Example usage with image and bboxes form ground truth txt file
+    return frame_idx, last_read_line, curr_line, distorted_img
+    
+
+# Example usage with video and bboxes form ground truth txt file
 
 if __name__ == "__main__":
-    img_path = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c004/still_from_vid.jpg"  # Replace with your image path
-    gt_path = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c004/gt_for_still.txt"
-    img = Image.open(img_path).convert("RGB")
-    params = DistortionParams()
-    distorted_img = distort_image(img, params)
+    vid_path = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c004/vdo.avi"
+    gt_path = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c004/gt/gt.txt"
 
-    # Load bboxes from gt file
-    bboxes = []
-    with open(gt_path, "r") as f:
-        for line in f:
-            parts = line.strip().split(",")
-            if len(parts) < 7:
-                continue
-            x, y, w, h = map(float, parts[2:6])
-            x1, y1, x2, y2 = x, y, x+w, y+h
-            bboxes.append([x1,y1,x2,y2])
-    bboxes = np.array(bboxes, dtype=np.float32)
+    
+    cap = cv2.VideoCapture(vid_path)
+    if not cap.isOpened():
+        print("Error: Could not open video.")
+        exit()
 
-    # Draw original bboxes
-    img_with_bboxes = draw_bboxes(img, bboxes, color=(0,255,0))
-    img_with_bboxes.show()
+    fx, fy, cx, cy = _get_intrinsics(cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT), DistortionParams())
+    params = DistortionParams(fx=fx, fy=fy, cx=cx, cy=cy)
 
-    #wait till window is closed
-    input("Press Enter to continue...")
+    gt_file = open(gt_path, 'r')
+    if gt_file is None:
+        print("Error: Could not open ground truth file.")
+        exit()
 
-    # Map bboxes through distortion
-    distorted_bboxes = map_bboxes_through_distortion(bboxes, img.size, params)
-    print(bboxes)
-    print(distorted_bboxes)
-    distorted_img_with_bboxes = draw_bboxes(distorted_img, bboxes, color=(0,255,0))
-    distorted_img_with_bboxes = draw_bboxes(distorted_img_with_bboxes, distorted_bboxes, color=(255,0,0))
-    distorted_img_with_bboxes.show()
+    lines = gt_file.readlines()
+    gt_file.close()
+
+    curr_line = None
+    last_read_line = 0
+    frame_idx = 1
+
+    for frame_nr in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT))):
+        frame_nr += 1
+
+        ret, frame = cap.read()
+
+        if not ret:
+            print("Error: Could not read frame.")
+            break
+
+        frame_idx, last_read_line, curr_line, labeled_frame = ground_truth_for_frame(frame_idx, last_read_line, frame_nr, curr_line, frame, lines, params)
+        labeled_frame = cv2.cvtColor(np.array(labeled_frame), cv2.COLOR_RGB2BGR)
+        labeled_frame = cv2.resize(labeled_frame, (1280, 720))
+        cv2.imshow('Distorted Frame with BBoxes', labeled_frame)
+        if cv2.waitKey(0) & 0xFF == ord('q'):
+            break

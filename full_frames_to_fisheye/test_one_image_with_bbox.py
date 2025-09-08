@@ -15,8 +15,8 @@ except Exception:
 @dataclass
 class DistortionParams:
     # Radial polynomial distortion (OpenCV-style, barrel if k1 < 0)
-    k1: float = -0.9
-    k2: float = -0.1
+    k1: float = -0.6
+    k2: float = 0.1
     k3: float = -0.05
     p1: float = 0.0  # tangential
     p2: float = 0.0  # tangential
@@ -153,7 +153,8 @@ if __name__ == "__main__":
     img_path = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c004/still_from_vid.jpg"  # Replace with your image path
     gt_path = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c004/gt_for_still.txt"
     img = Image.open(img_path).convert("RGB")
-    params = DistortionParams()
+    fx, fy, cx, cy = _get_intrinsics(img.size[0], img.size[1], DistortionParams())
+    params = DistortionParams(fx=fx, fy=fy, cx=cx, cy=cy)
     distorted_img = distort_image(img, params)
 
     # Load bboxes from gt file
