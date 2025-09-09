@@ -3,10 +3,10 @@ import os
 import csv
 
 # Config
-video_path = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/test/S06/c041/vdo.avi"
-gt_path = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/test/S06/c041/mtsc/mtsc_tnt_mask_rcnn.txt"
-output_dir = "dataset"
-csv_output = "dataset.csv"
+video_path = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c004/fisheye_vdo.avi"
+gt_path = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c004/gt/gt_fisheye.txt"
+output_dir = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c004/fisheye_dataset"
+csv_output = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c004/fisheye_dataset.csv"
 
 os.makedirs(output_dir, exist_ok=True)
 

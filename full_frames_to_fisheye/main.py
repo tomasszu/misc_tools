@@ -115,44 +115,62 @@ def draw_bboxes(img: np.ndarray, bboxes: np.ndarray, color=(0, 0, 255)) -> np.nd
 # Process one frame
 # -------------------------
 def ground_truth_for_frame(frame_idx, last_read_line, frame_nr, curr_line, frame, lines, mapx, mapy):
-
-    distorted_img = distort_with_maps(frame, mapx, mapy)
+    """Process one frame, distort image + bboxes, return distorted frame and GT entries."""
+    distorted_orig_img = distort_with_maps(frame, mapx, mapy)
+    distorted_img = distorted_orig_img.copy()
     bboxes_frame = []
+    track_ids_frame = []
 
     if (last_read_line != 0 and frame_idx == frame_nr):
-        x, y, w, h = map(float, curr_line[2:6])
+        x, y, w, h = map(int, curr_line[2:6])
         bboxes_frame.append([x, y, x+w, y+h])
+        track_ids_frame.append(int(curr_line[1]))
 
     if (last_read_line == 0 or frame_idx == frame_nr):
         while frame_idx == frame_nr:
             line = lines[last_read_line]
             curr_line = line.split(",", maxsplit=6)
             frame_idx = int(curr_line[0])
-            x, y, w, h = map(float, curr_line[2:6])
+            track_id = int(curr_line[1])
+            x, y, w, h = map(int, curr_line[2:6])
             if frame_idx == frame_nr:
                 last_read_line += 1
                 bboxes_frame.append([x, y, x+w, y+h])
+                track_ids_frame.append(track_id)
             else:
                 last_read_line += 1
                 break
 
+    distorted_gt_lines = []
     if len(bboxes_frame) > 0:
         bboxes_frame = np.array(bboxes_frame, dtype=np.float32)
         distorted_bboxes = map_bboxes_through_distortion(
             bboxes_frame, distorted_img.shape[1::-1], mapx, mapy
         )
+
+        # Draw both original and distorted bboxes (optional visualization)
         distorted_img = draw_bboxes(distorted_img, bboxes_frame, color=(0,255,0))      # green = original
         distorted_img = draw_bboxes(distorted_img, distorted_bboxes, color=(0,0,255))  # red = distorted
 
-    return frame_idx, last_read_line, curr_line, distorted_img
+        # Convert distorted bboxes back to MOT format lines
+        for (x1, y1, x2, y2), track_id in zip(distorted_bboxes, track_ids_frame):
+            w = x2 - x1
+            h = y2 - y1
+            conf, cls, vis = 1, -1, -1
+            distorted_gt_lines.append(f"{frame_nr},{track_id},{int(x1)},{int(y1)},{int(w)},{int(h)},{conf},{cls},{vis}\n")
+
+    return frame_idx, last_read_line, curr_line, distorted_img, distorted_orig_img, distorted_gt_lines
+
 
 
 # -------------------------
 # Main loop
 # -------------------------
 if __name__ == "__main__":
-    vid_path = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c004/vdo.avi"
-    gt_path  = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c004/gt/gt.txt"
+    vid_path = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c001/vdo.avi"
+    gt_path  = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c001/gt/gt.txt"
+    out_vid_path = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c001/strong_fisheye_vdo.avi"
+    out_gt_path = "/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c001/gt/gt_strong_fisheye.txt"
 
     cap = cv2.VideoCapture(vid_path)
     if not cap.isOpened():
@@ -160,6 +178,10 @@ if __name__ == "__main__":
         exit()
 
     w, h = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out_writer = cv2.VideoWriter(out_vid_path, fourcc, fps, (w, h))
 
     # Mild fisheye (subtle barrel) — looks natural, small curvature
     # params = DistortionParams(
@@ -180,28 +202,30 @@ if __name__ == "__main__":
     #     cx = 960.0, cy = 540.0
     # )
     # Strong fisheye (extreme barrel, strong edge compression)
-    # params = DistortionParams(
-    #     k1 = -0.5,
-    #     k2 = -0.08,
-    #     k3 = -0.02,
-    #     p1 = 0.0, p2 = 0.0,
-    #     fx = 700.0, fy = 700.0,
-    #     cx = 960.0, cy = 540.0
-    # )
-
     params = DistortionParams(
-        k1 = -0.6,
-        k2 = 0.02,
-        k3 = -0.2,
+        k1 = -0.5,
+        k2 = -0.08,
+        k3 = -0.02,
         p1 = 0.0, p2 = 0.0,
-        fx = 900.0, fy = 900.0,
+        fx = 700.0, fy = 700.0,
         cx = 960.0, cy = 540.0
     )
+    #Custom:
+    # params = DistortionParams(
+    #     k1 = -0.6,
+    #     k2 = 0.02,
+    #     k3 = -0.2,
+    #     p1 = 0.0, p2 = 0.0,
+    #     fx = 900.0, fy = 900.0,
+    #     cx = 960.0, cy = 540.0
+    # )
 
     mapx, mapy = precompute_maps(w, h, params)
 
     with open(gt_path, "r") as f:
         lines = f.readlines()
+
+    out_gt_file = open(out_gt_path, "w")
 
     curr_line = None
     last_read_line = 0
@@ -213,11 +237,19 @@ if __name__ == "__main__":
         if not ret:
             break
 
-        frame_idx, last_read_line, curr_line, labeled_frame = ground_truth_for_frame(
+        frame_idx, last_read_line, curr_line, labeled_frame, distorted_unlabeled_frame, distorted_gt_lines = ground_truth_for_frame(
             frame_idx, last_read_line, frame_nr, curr_line, frame, lines, mapx, mapy
         )
 
-        labeled_frame = cv2.resize(labeled_frame, (1280, 720))
-        cv2.imshow('Distorted Frame with BBoxes', labeled_frame)
-        if cv2.waitKey(0) & 0xFF == ord('q'):
-            break
+        # write frame to video
+        # distorted_frame_bgr = cv2.cvtColor(np.array(distorted_unlabeled_frame), cv2.COLOR_RGB2BGR)
+        out_writer.write(distorted_unlabeled_frame)
+
+        # write GT lines
+        out_gt_file.writelines(distorted_gt_lines)
+
+        #Display frame (optional)
+        # labeled_frame = cv2.resize(labeled_frame, (1280, 720))
+        # cv2.imshow('Distorted Frame with BBoxes', labeled_frame)
+        # if cv2.waitKey(0) & 0xFF == ord('q'):
+        #     break
