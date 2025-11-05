@@ -75,7 +75,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     # Example usage
-    img = cv2.imread("/home/tomass/Pictures/IPcam1_screens/vlcsnap-2025-08-27-15h29m55s778.png")
+    img = cv2.imread("/home/tomass/Downloads/images/images_00/left_images/img_1760063941558817131.png")
 
     h, w = img.shape[:2]
 
