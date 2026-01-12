@@ -56,5 +56,5 @@ def fisheye_to_rectilinear(image_path, output_path, fov_deg=120):
 
 
 # Example usage:
-fisheye_to_rectilinear("/home/tomass/Downloads/images/images_00/left_images/img_1760063941558817131.png", "output.png")
+fisheye_to_rectilinear("/home/tomass/Downloads/conceptf_images/images_00/right_images/img_1760063675559624435.png", "fisheye_rosbag_right1.png")
 

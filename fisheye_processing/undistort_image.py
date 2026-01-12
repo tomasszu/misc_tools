@@ -1,29 +1,6 @@
 import cv2
 import numpy as np
 
-def fisheye_to_panorama(img, fov_deg=360, output_width=2048, output_height=512, cx=None, cy=None):
-    h, w = img.shape[:2]
-    if cx is None:
-        cx, cy = w / 2, h / 2
-    max_radius = min(cx, cy)
-
-    # Convert FOV to radians
-    fov_rad = np.deg2rad(fov_deg)
-
-    # Prepare destination grid
-    theta = np.linspace(0, fov_rad, output_width)
-    r = np.linspace(1, 0, output_height) * max_radius
-
-    theta, r = np.meshgrid(theta, r)
-
-    # Polar to Cartesian
-    map_x = (r * np.cos(theta) + cx).astype(np.float32)
-    map_y = (r * np.sin(theta) + cy).astype(np.float32)
-
-    # Remap to get panoramic image
-    pano = cv2.remap(img, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-    return pano
-
 def undistort_image_fisheye(image, K, D):
     """
     Undistorts an image using the camera intrinsics and distortion coefficients.
@@ -54,7 +31,7 @@ mode = 'undistort_fisheye'  # options: 'undistort_fisheye','undistort_plumbob', 
 # ---------------------------------------------------------------------------------------
 
 # Load your fisheye image
-img = cv2.imread("/home/tomass/Downloads/images/images_00/left_images/img_1760063941558817131.png")
+img = cv2.imread("/home/tomass/Downloads/conceptf_images/images_00/right_images/img_1760063675559624435.png")
 h, w = img.shape[:2]
 
 # fisheye intrinsics
@@ -77,11 +54,6 @@ if mode == 'undistort_fisheye':
 
     cv2.imshow("Undistorted Image", undistorted_image)
 
-elif mode == 'panorama':
-    # Create panoramic image
-    pano_image = fisheye_to_panorama(img, fov_deg=360, output_width=2048, output_height=512, cx=cx, cy=cy)
-
-    cv2.imshow("Panoramic Image", pano_image)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()

@@ -7,8 +7,9 @@ from visualizer import Visualizer
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--video_path1', type=str, default='/home/tomass/tomass/docker/dockerized_reid_pipeline/detection/videos/vdo4.avi', help='Path to the first video file. (Re-Identification FROM)')
-    parser.add_argument('--roi_path1', type=str, default="/home/tomass/tomass/docker/dockerized_reid_pipeline/detection/videos/vdo4_roi.png", help='Path to the ROI image for the first video. If not provided, it will try to auto-detect in the same folder based on the video name.')
+    parser.add_argument('--video_path1', type=str, default='/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c003/vdo.avi', help='Path to the first video file. (Re-Identification FROM)')
+    #parser.add_argument('--roi_path1', type=str, default="/home/tomass/tomass/docker/dockerized_reid_pipeline/detection/videos/vdo4_roi.png", help='Path to the ROI image for the first video. If not provided, it will try to auto-detect in the same folder based on the video name.')
+    parser.add_argument('--roi_path1', type=str, help='Path to the ROI image for the first video. If not provided, it will try to auto-detect in the same folder based on the video name.')
     parser.add_argument('--detection_model_path', type=str, default='yolov8x.pt', choices=['yolov8x.pt', 'yolov8l.pt', 'yolov5su.pt'] , help='Path to the YOLO model file.')
     parser.add_argument('--device', type=str, default='cuda', choices=['cuda','cpu'], help='Device to run the model on (e.g., "cuda" or "cpu").')
 
@@ -17,8 +18,8 @@ def parse_args():
     # Args concerning the establishment of crop zones for video 1 and video 2
     parser.add_argument('--crop_zone_rows_vid1', type=int, default=7, help='Number of rows in the crop zone grid for the first video.')
     parser.add_argument('--crop_zone_cols_vid1', type=int, default=6, help='Number of columns in the crop zone grid for the first video.')
-    parser.add_argument('--crop_zone_area_bottom_left_vid1', type=tuple, default=(0, 1000), help='Bottom-left corner of the crop zone area as a tuple (x, y) for the first video.')
-    parser.add_argument('--crop_zone_area_top_right_vid1', type=tuple, default=(1750, 320), help='Top-right corner of the crop zone area as a tuple (x, y) for the first video.')
+    parser.add_argument('--crop_zone_area_bottom_left_vid1', type=tuple, default=(200, 900), help='Bottom-left corner of the crop zone area as a tuple (x, y) for the first video.')
+    parser.add_argument('--crop_zone_area_top_right_vid1', type=tuple, default=(1750, 270), help='Top-right corner of the crop zone area as a tuple (x, y) for the first video.')
 
     return parser.parse_args()
 
