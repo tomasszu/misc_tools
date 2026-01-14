@@ -17,8 +17,7 @@ def extract_motion_sequences(
     cap = cv2.VideoCapture(video_path)
     assert cap.isOpened(), "Cannot open video"
 
-    # Sniegam es nonesu threshold no 64 uz 16, jo video ir ar mazaku izskatu izmainamibu
-    bg = cv2.createBackgroundSubtractorMOG2(history=300, varThreshold=16, detectShadows=False)
+    bg = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=64, detectShadows=False)
 
     frame_idx = 0
     saved = 0
@@ -39,8 +38,8 @@ def extract_motion_sequences(
 
             frame_idx += 1
             # SKIP initial frames if needed -----------------------------
-            # if frame_idx < 1400:
-            #     continue  # skip initial frames if needed
+            if frame_idx < 1400:
+                continue  # skip initial frames if needed
             # -----------------------------------------------------------
             buffer.append((frame_idx, orig_frame.copy(), cap.get(cv2.CAP_PROP_POS_MSEC)))
             print(f"Processing frame {frame_idx}", end='\r')
@@ -94,6 +93,6 @@ def extract_motion_sequences(
 # Example usage:
 
 extract_motion_sequences(
-    video_path="/home/tomass/tomass/Cam_record/12.01.26/fisheye_record_1768215168.9960444.avi",
-    out_dir="/home/tomass/tomass/Cam_record/12.01.26/fisheye_record_1768215168.9960444.avi_frames"
+    video_path="/home/tomass/tomass/Cam_record/04.09.25_2/fisheye_record_1756987992.9123657.avi",
+    out_dir="fisheye_record_1756987992.9123657_frames"
 )
