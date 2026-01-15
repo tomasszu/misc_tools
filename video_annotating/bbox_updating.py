@@ -33,13 +33,13 @@ class VideoAnnotationApp:
         annotations = {}
         
         for index, row in self.annotations.iterrows():
-            frame_id = row['frame_id']
+            frame_id = row['frame_id']            
             # Adjust bboxes to match resized frame
             bbox = (int(row['x1'] * self.x_scale), int(row['y1'] * self.y_scale),
                     int((row['x2'] - row['x1']) * self.x_scale), int((row['y2'] - row['y1']) * self.y_scale))
             if frame_id not in annotations:
                 annotations[frame_id] = []
-            annotations[frame_id].append((bbox, row['track_id']))  # Store track_id with bbox
+            annotations[frame_id].append((bbox, row['track_id'], row['filename'], row['confidence'], row['class_id']))  # Store track_id with bbox
         
         return annotations
 
@@ -100,7 +100,7 @@ class VideoAnnotationApp:
         if self.current_frame in self.frame_annotations:
             # Search for the bounding box with the specified track_id
             self.bboxes = [bbox for bbox in self.bboxes if bbox[1] != track_id_to_delete]
-            self.frame_annotations[self.current_frame] = [(bbox, track_id) for bbox, track_id in self.frame_annotations[self.current_frame] if track_id != track_id_to_delete]
+            self.frame_annotations[self.current_frame] = [(bbox, track_id, filename, conf, class_id) for bbox, track_id, filename, conf, class_id in self.frame_annotations[self.current_frame] if track_id != track_id_to_delete]
 
             self.update_frame()  # Refresh the frame after deletion
             print(f"Deleted bounding box with Track ID {track_id_to_delete} from frame {self.current_frame}")
@@ -117,7 +117,8 @@ class VideoAnnotationApp:
 
     def on_click(self, event):
         x, y = event.x, event.y
-        for i, (bbox, _) in enumerate(self.bboxes):
+        for i, dets in enumerate(self.bboxes):
+            bbox = dets[0]
             if self.is_on_edge(x, y, bbox):
                 self.selected_box = i
                 self.resizing = True
@@ -132,11 +133,17 @@ class VideoAnnotationApp:
         x, y = event.x, event.y
         if self.moving and self.selected_box is not None:
             bx, by, bw, bh = self.bboxes[self.selected_box][0]
-            self.bboxes[self.selected_box] = ((x - self.start_x, y - self.start_y, bw, bh), self.bboxes[self.selected_box][1])
+            dets = self.bboxes[self.selected_box]
+            bboxes = (x - self.start_x, y - self.start_y, bw, bh)
+            self.bboxes[self.selected_box] = (bboxes, dets[1], dets[2], dets[3], dets[4])
+            #self.bboxes[self.selected_box] = ((x - self.start_x, y - self.start_y, bw, bh), self.bboxes[self.selected_box][1])
             self.update_frame()
         elif self.resizing and self.selected_box is not None:
             bx, by, bw, bh = self.bboxes[self.selected_box][0]
-            self.bboxes[self.selected_box] = ((bx, by, max(20, x - bx), max(20, y - by)), self.bboxes[self.selected_box][1])
+            dets = self.bboxes[self.selected_box]
+            bboxes = (bx, by, max(20, x - bx), max(20, y - by))
+            self.bboxes[self.selected_box] = (bboxes, dets[1], dets[2], dets[3], dets[4])
+            #self.bboxes[self.selected_box] = ((bx, by, max(20, x - bx), max(20, y - by)), self.bboxes[self.selected_box][1])
             self.update_frame()
 
     def on_release(self, event):
@@ -152,7 +159,7 @@ class VideoAnnotationApp:
 
         frame_resized = cv2.resize(frame, (self.resized_width, self.resized_height))
 
-        for bbox, track_id in self.bboxes:
+        for bbox, track_id, _, _, _ in self.bboxes:
             x, y, w, h = bbox
             cv2.rectangle(frame_resized, (x, y), (x + w, y + h), (0, 255, 0), 2)
             cv2.rectangle(frame_resized, (x + w - 10, y + h - 10), (x + w, y + h), (0, 0, 255), -1)
@@ -209,8 +216,8 @@ class VideoAnnotationApp:
         updated_data = []
 
         # Update the annotations with the current bounding boxes
-        for frame_id, boxes in self.frame_annotations.items():
-            for bbox, track_id in boxes:
+        for frame_id, dets in self.frame_annotations.items():
+            for bbox, track_id, filename, conf, class_id in dets:
                 x, y, w, h = bbox
                 # Convert back to original resolution
                 x1 = int(x / self.x_scale)
@@ -219,12 +226,15 @@ class VideoAnnotationApp:
                 y2 = int((y + h) / self.y_scale)
 
                 updated_data.append({
+                    'filename': filename,
                     'frame_id': frame_id,
                     'track_id': track_id,
                     'x1': x1,
                     'y1': y1,
                     'x2': x2,
-                    'y2': y2
+                    'y2': y2,
+                    'confidence': conf,
+                    'class_id': class_id
                 })
 
         updated_df = pd.DataFrame(updated_data)

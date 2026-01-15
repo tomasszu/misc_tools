@@ -5,6 +5,7 @@ Object detection and tracking on video.
 
 It saves the original bboxes after detection to use for annotations instead of the distorted ones that are returned after passing through bytetrack.
 
+Additionally this code employes a ROI mask to focus detection on relevant areas of the frame.
 """
 
 # COCO class ID for vehicles: car, motorcycle, bus, truck
@@ -26,6 +27,20 @@ tracker = sv.ByteTrack()
 classes = [2, 5, 7]
 conf_thres = 0.3
 
+def apply_roi_mask(frame, mask):
+    if mask.shape[:2] != frame.shape[:2]:
+        mask_resized = cv2.resize(mask, (frame.shape[1], frame.shape[0]))
+    else:
+        mask_resized = mask
+
+    return cv2.bitwise_and(frame, frame, mask=mask_resized)
+
+mask = cv2.imread(
+    "/home/tomass/tomass/Cam_record/ROIs/fisheye_cam_right_perspective_strict_roi.png",
+    cv2.IMREAD_GRAYSCALE
+)
+# Make binary mask (0 / 255)
+mask = (mask > 0).astype(np.uint8) * 255
 
 folder_name = "right"
 frames = sorted(Path(f"/home/tomass/tomass/Cam_record/04.09.25_3/perspective_views_fisheye_record_1756991341.9092808_frames_refined/{folder_name}").glob("*.jpg"))
@@ -41,9 +56,10 @@ for frame_id, frame_path in enumerate(frames):
 
     print(f"Processing frame {frame_id}: {frame_path}", end='\r')
 
+    masked_frame = apply_roi_mask(frame, mask)
 
     # ---- YOLO DETECTION (NO TRACKING) ----
-    result = model(frame, conf=conf_thres, classes=classes, verbose=False)[0]
+    result = model(masked_frame, conf=conf_thres, classes=classes, verbose=False)[0]
 
     detections = sv.Detections.from_ultralytics(result)
 

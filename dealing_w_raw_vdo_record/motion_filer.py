@@ -39,8 +39,9 @@ def extract_motion_sequences(
 
             frame_idx += 1
             # SKIP initial frames if needed -----------------------------
-            # if frame_idx < 1400:
-            #     continue  # skip initial frames if needed
+            if frame_idx < 35911:
+                print(f"Skipping frame {frame_idx}", end='\r')
+                continue  # skip initial frames if needed
             # -----------------------------------------------------------
             buffer.append((frame_idx, orig_frame.copy(), cap.get(cv2.CAP_PROP_POS_MSEC)))
             print(f"Processing frame {frame_idx}", end='\r')

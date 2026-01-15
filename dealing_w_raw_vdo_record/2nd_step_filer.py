@@ -2,7 +2,7 @@ import cv2
 import os
 from ultralytics import YOLO
 
-VEHICLE_CLASSES = {2, 3, 5, 7}
+VEHICLE_CLASSES = {2, 5, 7}
 
 def filter_vehicle_frames_from_folder(
     frame_dir,
@@ -81,6 +81,6 @@ def filter_vehicle_frames_from_folder(
 
 # Example usage:
 filter_vehicle_frames_from_folder(
-    frame_dir="/home/tomass/tomass/Cam_record/12.01.26/fisheye_record_1756987992.9123657_frames",
-    out_dir="/home/tomass/tomass/Cam_record/12.01.26/fisheye_record_1756987992.9123657_frames_refined",
+    frame_dir="/home/tomass/tomass/Cam_record/04.09.25_3/fisheye_record_1756991341.9092808_frames",
+    out_dir="/home/tomass/tomass/Cam_record/04.09.25_3/fisheye_record_1756991341.9092808_frames_refined",
     roi_mask_path="/home/tomass/tomass/Cam_record/ROIs/fisheye_cam_movement_roi.png")

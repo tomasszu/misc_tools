@@ -196,8 +196,8 @@ class AnnotationUpdater:
         print("Annotations saved to updated_annotations.csv")
 
 # Create an instance of the AnnotationUpdater
-csv_path = '/home/tomass/tomass/Cam_record/04.09.25_2/perspective_views_fisheye_record_1756987992.9123657_frames_refined/right/annotations.csv'
-video_path = '/home/tomass/tomass/Cam_record/04.09.25_2/perspective_views_fisheye_record_1756987992.9123657_frames_refined/right_video.avi'
+csv_path = '/home/tomass/tomass/Cam_record/04.09.25_3/perspective_views_fisheye_record_1756991341.9092808_frames_refined/right/annotations_test.csv'
+video_path = '/home/tomass/tomass/Cam_record/04.09.25_3/perspective_views_fisheye_record_1756991341.9092808_frames_refined/right_video.avi'
 annotation_updater = AnnotationUpdater(csv_path, video_path)
 
 # Start the tkinter GUI loop
