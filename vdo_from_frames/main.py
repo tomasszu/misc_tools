@@ -31,7 +31,7 @@ def create_video_from_frames(frames_dir, output_video_path, fps=30):
 
 # Example usage:
 create_video_from_frames(
-    frames_dir="/home/tomass/tomass/Cam_record/04.09.25_3/perspective_views_fisheye_record_1756991341.9092808_frames_refined/right",
-    output_video_path="/home/tomass/tomass/Cam_record/04.09.25_3/perspective_views_fisheye_record_1756991341.9092808_frames_refined/right_video.avi",
+    frames_dir="/home/tomass/tomass/Cam_record/12.01.26/perspective_views_fisheye_record/left/",
+    output_video_path="/home/tomass/tomass/Cam_record/12.01.26/perspective_views_fisheye_record/left_video.avi",
     fps=4
 )

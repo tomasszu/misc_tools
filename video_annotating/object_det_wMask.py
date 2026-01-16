@@ -43,9 +43,9 @@ mask = cv2.imread(
 mask = (mask > 0).astype(np.uint8) * 255
 
 folder_name = "right"
-frames = sorted(Path(f"/home/tomass/tomass/Cam_record/04.09.25_3/perspective_views_fisheye_record_1756991341.9092808_frames_refined/{folder_name}").glob("*.jpg"))
+frames = sorted(Path(f"/home/tomass/tomass/Cam_record/12.01.26/perspective_views_fisheye_record/{folder_name}").glob("*.jpg"))
 # Define output directory
-output_dir = f"/home/tomass/tomass/Cam_record/04.09.25_3/perspective_views_fisheye_record_1756991341.9092808_frames_refined/{folder_name}"
+output_dir = f"/home/tomass/tomass/Cam_record/12.01.26/perspective_views_fisheye_record/{folder_name}"
 
 rows = []
 
@@ -86,7 +86,7 @@ for frame_id, frame_path in enumerate(frames):
         x1, y1, x2, y2 = matched_boxes[i]
 
         rows.append([
-            frame_path.name,
+            Path(folder_name,frame_path.name),
             frame_id,
             int(tracked.tracker_id[i]),
             x1, y1, x2, y2,
