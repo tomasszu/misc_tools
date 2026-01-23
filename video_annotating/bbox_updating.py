@@ -245,5 +245,5 @@ class VideoAnnotationApp:
         self.root.mainloop()
 
 if __name__ == "__main__":
-    app = VideoAnnotationApp("/home/tomass/tomass/Cam_record/04.09.25_3/perspective_views_fisheye_record/left_video.avi", "/home/tomass/tomass/Cam_record/04.09.25_3/perspective_views_fisheye_record/left/annotations.csv")
+    app = VideoAnnotationApp("/home/tomass/tomass/Cam_record/14.01.26/perspective_views_fisheye_record/right_video.avi", "/home/tomass/tomass/Cam_record/14.01.26/perspective_views_fisheye_record/right/annotations.csv")
     app.run()

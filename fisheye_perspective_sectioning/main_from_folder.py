@@ -126,8 +126,8 @@ def process_fisheye_folder(
 
 if __name__ == "__main__":
 
-    input_frames = "/home/tomass/tomass/Cam_record/12.01.26/fisheye_record_1768215168.9960444.avi_frames_refined"
-    output_root = "/home/tomass/tomass/Cam_record/12.01.26/perspective_views_fisheye_record"
+    input_frames = "/home/tomass/tomass/Cam_record/14.01.26/fisheye_record_1768378735.1271968.avi_frames_refined"
+    output_root = "/home/tomass/tomass/Cam_record/14.01.26/perspective_views_fisheye_record"
 
     # --- Intrinsics (replace with real calibration if you have it) ---
     sample = cv2.imread(os.path.join(input_frames, os.listdir(input_frames)[0]))

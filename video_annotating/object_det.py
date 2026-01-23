@@ -27,10 +27,10 @@ classes = [2, 5, 7]
 conf_thres = 0.3
 
 
-folder_name = "center"
-frames = sorted(Path(f"/home/tomass/tomass/Cam_record/12.01.26/perspective_views_fisheye_record/{folder_name}").glob("*.jpg"))
+folder_name = "right"
+frames = sorted(Path(f"/home/tomass/tomass/Cam_record/14.01.26/perspective_views_fisheye_record/{folder_name}").glob("*.jpg"))
 # Define output directory
-output_dir = f"/home/tomass/tomass/Cam_record/12.01.26/perspective_views_fisheye_record/{folder_name}"
+output_dir = f"/home/tomass/tomass/Cam_record/14.01.26/perspective_views_fisheye_record/{folder_name}"
 
 rows = []
 
@@ -84,7 +84,7 @@ df = pd.DataFrame(
 )
 
 # Save as CSV
-csv_path = f"{output_dir}/annotations_test.csv"
+csv_path = f"{output_dir}/annotations.csv"
 df.to_csv(csv_path, index=False)
 
 print(f"Annotations saved to {csv_path}")

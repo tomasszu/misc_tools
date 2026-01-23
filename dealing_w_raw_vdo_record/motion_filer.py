@@ -39,7 +39,7 @@ def extract_motion_sequences(
 
             frame_idx += 1
             # SKIP initial frames if needed -----------------------------
-            if frame_idx < 35911:
+            if frame_idx < 99568:
                 print(f"Skipping frame {frame_idx}", end='\r')
                 continue  # skip initial frames if needed
             # -----------------------------------------------------------
@@ -95,6 +95,6 @@ def extract_motion_sequences(
 # Example usage:
 
 extract_motion_sequences(
-    video_path="/home/tomass/tomass/Cam_record/12.01.26/fisheye_record_1768215168.9960444.avi",
-    out_dir="/home/tomass/tomass/Cam_record/12.01.26/fisheye_record_1768215168.9960444.avi_frames"
+    video_path="/home/tomass/tomass/Cam_record/14.01.26/fisheye_record_1768378735.1271968.avi",
+    out_dir="/home/tomass/tomass/Cam_record/14.01.26/fisheye_record_1768378735.1271968.avi_frames"
 )

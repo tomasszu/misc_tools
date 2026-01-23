@@ -43,9 +43,9 @@ mask = cv2.imread(
 mask = (mask > 0).astype(np.uint8) * 255
 
 folder_name = "right"
-frames = sorted(Path(f"/home/tomass/tomass/Cam_record/12.01.26/perspective_views_fisheye_record/{folder_name}").glob("*.jpg"))
+frames = sorted(Path(f"/home/tomass/tomass/Cam_record/14.01.26/perspective_views_fisheye_record/{folder_name}").glob("*.jpg"))
 # Define output directory
-output_dir = f"/home/tomass/tomass/Cam_record/12.01.26/perspective_views_fisheye_record/{folder_name}"
+output_dir = f"/home/tomass/tomass/Cam_record/14.01.26/perspective_views_fisheye_record/{folder_name}"
 
 rows = []
 
@@ -100,7 +100,7 @@ df = pd.DataFrame(
 )
 
 # Save as CSV
-csv_path = f"{output_dir}/annotations_test.csv"
+csv_path = f"{output_dir}/annotations.csv"
 df.to_csv(csv_path, index=False)
 
 print(f"Annotations saved to {csv_path}")

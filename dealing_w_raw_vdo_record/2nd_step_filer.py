@@ -81,6 +81,6 @@ def filter_vehicle_frames_from_folder(
 
 # Example usage:
 filter_vehicle_frames_from_folder(
-    frame_dir="/home/tomass/tomass/Cam_record/12.01.26/fisheye_record_1768215168.9960444.avi_frames",
-    out_dir="/home/tomass/tomass/Cam_record/12.01.26/fisheye_record_1768215168.9960444.avi_frames_refined",
+    frame_dir="/home/tomass/tomass/Cam_record/14.01.26/fisheye_record_1768378735.1271968.avi_frames",
+    out_dir="/home/tomass/tomass/Cam_record/14.01.26/fisheye_record_1768378735.1271968.avi_frames_refined",
     roi_mask_path="/home/tomass/tomass/Cam_record/ROIs/fisheye_cam_movement_roi.png")
