@@ -7,19 +7,19 @@ from visualizer import Visualizer
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--video_path1', type=str, default='/home/tomass/tomass/data/AIC22_Track1_MTMC_Tracking(1)/train/S01/c003/vdo.avi', help='Path to the first video file. (Re-Identification FROM)')
+    parser.add_argument('--video_path1', type=str, default='/home/tomass/Videos/camera_1.mp4', help='Path to the first video file. (Re-Identification FROM)')
     #parser.add_argument('--roi_path1', type=str, default="/home/tomass/tomass/docker/dockerized_reid_pipeline/detection/videos/vdo4_roi.png", help='Path to the ROI image for the first video. If not provided, it will try to auto-detect in the same folder based on the video name.')
-    parser.add_argument('--roi_path1', type=str, help='Path to the ROI image for the first video. If not provided, it will try to auto-detect in the same folder based on the video name.')
+    parser.add_argument('--roi_path1', type=str, default='/home/tomass/tomass/Cam_record/regions_of_interest/cam1_roi.png', help='Path to the ROI image for the first video. If not provided, it will try to auto-detect in the same folder based on the video name.')
     parser.add_argument('--detection_model_path', type=str, default='yolov8x.pt', choices=['yolov8x.pt', 'yolov8l.pt', 'yolov5su.pt'] , help='Path to the YOLO model file.')
     parser.add_argument('--device', type=str, default='cuda', choices=['cuda','cpu'], help='Device to run the model on (e.g., "cuda" or "cpu").')
 
     parser.add_argument('--play_mode', type=int, default=200, help='Delay between frames in milliseconds. Set to 0 for manual frame stepping (Pressing Enter for new frame).')
 
     # Args concerning the establishment of crop zones for video 1 and video 2
-    parser.add_argument('--crop_zone_rows_vid1', type=int, default=7, help='Number of rows in the crop zone grid for the first video.')
-    parser.add_argument('--crop_zone_cols_vid1', type=int, default=6, help='Number of columns in the crop zone grid for the first video.')
-    parser.add_argument('--crop_zone_area_bottom_left_vid1', type=tuple, default=(200, 900), help='Bottom-left corner of the crop zone area as a tuple (x, y) for the first video.')
-    parser.add_argument('--crop_zone_area_top_right_vid1', type=tuple, default=(1750, 270), help='Top-right corner of the crop zone area as a tuple (x, y) for the first video.')
+    parser.add_argument('--crop_zone_rows_vid1', type=int, default=5, help='Number of rows in the crop zone grid for the first video.')
+    parser.add_argument('--crop_zone_cols_vid1', type=int, default=4, help='Number of columns in the crop zone grid for the first video.')
+    parser.add_argument('--crop_zone_area_bottom_left_vid1', type=tuple, default=(200, 800), help='Bottom-left corner of the crop zone area as a tuple (x, y) for the first video.')
+    parser.add_argument('--crop_zone_area_top_right_vid1', type=tuple, default=(1100, 270), help='Top-right corner of the crop zone area as a tuple (x, y) for the first video.')
 
     return parser.parse_args()
 
@@ -33,7 +33,7 @@ def run_demo(video_path1, roi_path1, detection_model, device, crop_zone_rows_1, 
     roi_mask = detector._load_roi(roi_path1, video_path1)
 
     # The visualizers will annotate the frames with the detections and matched IDs
-    visualizer = Visualizer(detector.class_names, rows=crop_zone_rows_1, cols=crop_zone_cols_1, area_bottom_left= crop_zone_area_bottom_left_1, area_top_right=crop_zone_area_top_right_1, roi_mask=roi_mask)
+    visualizer = Visualizer(detector.class_names, rows=crop_zone_rows_1, cols=crop_zone_cols_1, area_bottom_left= crop_zone_area_bottom_left_1, area_top_right=crop_zone_area_top_right_1)
 
 
     while True:
@@ -42,6 +42,10 @@ def run_demo(video_path1, roi_path1, detection_model, device, crop_zone_rows_1, 
         if not ret1:
             print("End of video stream.")
             break
+
+        # apply ROI mask to the frame
+        if roi_mask is not None:
+            frame = cv2.bitwise_and(frame, frame, mask=roi_mask)
 
         # Process the frames from both videos
         detections, frame = detector.process_frame(frame)

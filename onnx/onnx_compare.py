@@ -6,8 +6,8 @@ import torch.nn as nn
 
 # Switch model to CPU for export
 device = "cpu"
-model = load_model_from_opts("/home/tomass/tomass/ReID_pipele/vehicle_reid_repo2/vehicle_reid/model/veri+vehixlex_editTrainPar1/opts.yaml", 
-                                ckpt="/home/tomass/tomass/ReID_pipele/vehicle_reid_repo2/vehicle_reid/model/veri+vehixlex_editTrainPar1/net_39.pth", 
+model = load_model_from_opts("/home/tomass/tomass/ReID_pipele/vehicle_reid_repo2/vehicle_reid/model/main_sp4_ep6_ft_noCEL_070126/opts.yaml", 
+                                ckpt="/home/tomass/tomass/ReID_pipele/vehicle_reid_repo2/vehicle_reid/model/main_sp4_ep6_ft_noCEL_070126/net_26.pth", 
                                 remove_classifier=True)
 model.to(device)
 model.eval()
@@ -17,7 +17,7 @@ model.classifier.add_block[2] = nn.Sequential()  # remove classifier
 
 
 #Load ONNX model
-onnx_model_path = "/home/tomass/tomass/ReID_pipele/vehicle_reid_repo2/vehicle_reid/model/veri+vehixlex_editTrainPar1/net_39.onnx"
+onnx_model_path = "/home/tomass/tomass/ReID_pipele/vehicle_reid_repo2/vehicle_reid/model/main_sp4_ep6_ft_noCEL_070126/sp4_ep6_ft_noCEL_070126_26ep.onnx"
 session = ort.InferenceSession(onnx_model_path)
 
 # Get input name for ONNX model
